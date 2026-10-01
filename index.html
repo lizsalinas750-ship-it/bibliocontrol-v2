@@ -25,7 +25,7 @@
       <nav class="hidden md:flex space-x-4">
         <button onclick="switchView('catalogo')" class="text-white font-semibold text-sm border-b-2 border-indigo-400 pb-1">Catálogo General</button>
         <button onclick="switchView('usuarios')" class="text-indigo-200 hover:text-white text-sm font-medium pb-1">Registro de Usuarios</button>
-        <button onclick="switchView('prestamo')" class="text-indigo-200 hover:text-white text-sm font-medium pb-1">Préstamos y Salidas</button>
+        <button onclick="switchView('prestamo')" class="text-indigo-200 hover:text-white text-sm font-medium pb-1">Estatus de Préstamos</button>
         <button onclick="switchView('registro-libro')" class="admin-only text-indigo-200 hover:text-white text-sm font-medium pb-1 hidden">+ Registrar Libro (Admin)</button>
       </nav>
 
@@ -159,7 +159,6 @@
     <section id="view-usuarios" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <!-- Formulario para Registrar Usuarios -->
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
             <i data-lucide="user-plus" class="text-indigo-600"></i> Registrar Usuario
@@ -193,7 +192,6 @@
           </form>
         </div>
 
-        <!-- Tabla del Padrón de Usuarios -->
         <div class="md:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
             <i data-lucide="users" class="text-indigo-600"></i> Padrón de Usuarios Registrados
@@ -217,45 +215,51 @@
       </div>
     </section>
 
-    <!-- VISTA 4: MÓDULO DE PRÉSTAMOS -->
+    <!-- VISTA 4: MÓDULO DE PRÉSTAMOS, DETALLE Y VENCIMIENTO -->
     <section id="view-prestamo" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <!-- Formulario de Préstamos -->
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <!-- Asignar Préstamo (Visible sólo para Admin) -->
+        <div class="admin-only bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-            <i data-lucide="book-open-check" class="text-indigo-600"></i> Asignar Préstamo
+            <i data-lucide="book-open-check" class="text-indigo-600"></i> Asignar Nuevo Préstamo
           </h2>
           <form onsubmit="event.preventDefault(); procesarPrestamo();" class="space-y-3">
             <div>
               <label class="text-xs font-semibold text-slate-600 block mb-1">Seleccionar Usuario</label>
-              <select id="prestamo-usuario" required class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
-                <!-- Cargado dinámicamente -->
-              </select>
+              <select id="prestamo-usuario" required class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white"></select>
             </div>
             <div>
               <label class="text-xs font-semibold text-slate-600 block mb-1">Seleccionar Libro</label>
-              <select id="prestamo-libro" required class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
-                <!-- Cargado dinámicamente -->
+              <select id="prestamo-libro" required class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white"></select>
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-600 block mb-1">Duración del Préstamo (Días)</label>
+              <select id="prestamo-dias" required class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
+                <option value="3">3 Días</option>
+                <option value="7" selected>7 Días (1 Semana)</option>
+                <option value="14">14 Días (2 Semanas)</option>
               </select>
             </div>
             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-sm">Registrar Salida de Libro</button>
           </form>
         </div>
 
-        <!-- Tabla de Préstamos Activos -->
-        <div class="md:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <!-- Tabla Completa de Referencia de Préstamos (Pública / Admin) -->
+        <div id="container-prestamos" class="md:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-            <i data-lucide="clock" class="text-indigo-600"></i> Registro de Libros Prestados
+            <i data-lucide="clock" class="text-indigo-600"></i> Estatus y Detalle de Libros Prestados
           </h2>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm text-slate-600">
               <thead class="bg-slate-50 text-xs text-slate-500 uppercase">
                 <tr>
-                  <th class="px-3 py-2">Usuario</th>
-                  <th class="px-3 py-2">Libro Prestado</th>
-                  <th class="px-3 py-2">Fecha Préstamo</th>
-                  <th class="px-3 py-2 text-center">Acción</th>
+                  <th class="px-3 py-2">Libro Faltante</th>
+                  <th class="px-3 py-2">Prestado a</th>
+                  <th class="px-3 py-2">Fecha y Hora</th>
+                  <th class="px-3 py-2">Duración</th>
+                  <th class="px-3 py-2">Estatus / Vencimiento</th>
+                  <th class="admin-only px-3 py-2 text-center hidden">Acción</th>
                 </tr>
               </thead>
               <tbody id="prestamos-body" class="divide-y divide-slate-100"></tbody>
@@ -269,7 +273,7 @@
     <!-- VISTA 5: REGISTRO DE LIBROS POR EL ADMINISTRADOR -->
     <section id="view-registro-libro" class="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
       <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-        <i data-lucide="plus-circle" class="text-indigo-600"></i> Registrar Nuevo Libro / Recurso (Sólo Admin)
+        <i data-lucide="plus-circle" class="text-indigo-600"></i> Registrar Nuevo Libro / Recurso (Admin)
       </h2>
       <form onsubmit="event.preventDefault(); guardarNuevoLibro();" class="space-y-4">
         <div>
@@ -313,14 +317,11 @@
   </main>
 
   <script>
-    // BASE DE DATOS INICIAL
     let inventario = [
       { qr: "LIT-101", titulo: "Cien Años de Soledad - Gabriel García Márquez", categoria: "Novela / Ficción", estante: "Estante A-1 (Literatura)", total: 5, disponibles: 4, prestados: 1 },
       { qr: "FIC-201", titulo: "1984 - George Orwell", categoria: "Ciencia Ficción / Fantasía", estante: "Estante A-1 (Literatura)", total: 4, disponibles: 3, prestados: 1 },
       { qr: "HIS-301", titulo: "Sapiens: De animales a dioses - Yuval Noah Harari", categoria: "Historia y Biografías", estante: "Estante B-2 (Historia & Arte)", total: 6, disponibles: 6, prestados: 0 },
-      { qr: "PSI-401", titulo: "Hábitos Atómicos - James Clear", categoria: "Desarrollo Personal / Psicología", estante: "Estante B-2 (Historia & Arte)", total: 8, disponibles: 7, prestados: 1 },
-      { qr: "MNG-501", titulo: "Akira Vol. 1 - Katsuhiro Otomo", categoria: "Cómic / Manga / Novela Gráfica", estante: "Estante E-5 (Novelas Gráficas)", total: 3, disponibles: 3, prestados: 0 },
-      { qr: "SYS-701", titulo: "Ingeniería de Software - Pressman", categoria: "Sistemas y Tecnología", estante: "Estante D-4 (Tecnología)", total: 5, disponibles: 5, prestados: 0 }
+      { qr: "PSI-401", titulo: "Hábitos Atómicos - James Clear", categoria: "Desarrollo Personal / Psicología", estante: "Estante B-2 (Historia & Arte)", total: 8, disponibles: 7, prestados: 1 }
     ];
 
     let usuarios = [
@@ -329,9 +330,11 @@
     ];
 
     let prestamos = [
-      { usuario: "Perla Salinas (USR-101)", libro: "Cien Años de Soledad", qr: "LIT-101", fecha: "2026-10-01" },
-      { usuario: "Carlos Gómez (USR-102)", libro: "Hábitos Atómicos", qr: "PSI-401", fecha: "2026-10-01" }
+      { usuario: "Perla Salinas (USR-101)", libro: "Cien Años de Soledad", qr: "LIT-101", fechaHora: "2026-10-01 09:30 AM", dias: 7, fechaVencimiento: "2026-10-08" },
+      { usuario: "Carlos Gómez (USR-102)", libro: "Hábitos Atómicos", qr: "PSI-401", fechaHora: "2026-09-20 02:15 PM", dias: 3, fechaVencimiento: "2026-09-23" }
     ];
+
+    let esAdmin = false;
 
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
@@ -360,13 +363,17 @@
       const correo = document.getElementById('auth-correo').value;
       const rol = document.getElementById('auth-rol').value;
 
+      esAdmin = (rol === 'Admin');
+
       document.getElementById('main-header').classList.remove('hidden');
       document.getElementById('user-badge').innerText = `${correo} (${rol})`;
 
-      if (rol === 'Admin') {
+      if (esAdmin) {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+        document.getElementById('container-prestamos').className = "md:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4";
       } else {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+        document.getElementById('container-prestamos').className = "md:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4";
       }
 
       switchView('catalogo');
@@ -412,7 +419,7 @@
             <td class="px-4 py-3">
               ${item.disponibles > 0 
                 ? `<span class="px-2.5 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded-full font-medium">Disponible</span>` 
-                : `<span class="px-2.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full font-medium">Agotado</span>`}
+                : `<span class="px-2.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full font-medium">En Préstamo</span>`}
             </td>
           </tr>
         `;
@@ -443,15 +450,28 @@
     function renderPrestamos() {
       const tbody = document.getElementById('prestamos-body');
       tbody.innerHTML = '';
+
+      const hoy = new Date().toISOString().split('T')[0];
+
       prestamos.forEach((p, idx) => {
+        const estaVencido = p.fechaVencimiento < hoy;
+
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
-            <td class="px-3 py-2 font-medium text-slate-800">${p.usuario}</td>
-            <td class="px-3 py-2 text-xs font-semibold text-indigo-600">${p.libro}</td>
-            <td class="px-3 py-2 text-xs text-slate-500">${p.fecha}</td>
-            <td class="px-3 py-2 text-center">
-              <button onclick="devolverLibro(${idx})" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2.5 py-1 rounded-md">Devolver</button>
+            <td class="px-3 py-2 font-medium text-slate-800">${p.libro} <span class="font-mono text-xs text-indigo-600 font-bold">#${p.qr}</span></td>
+            <td class="px-3 py-2 text-xs text-slate-700">${p.usuario}</td>
+            <td class="px-3 py-2 text-xs text-slate-500">${p.fechaHora}</td>
+            <td class="px-3 py-2 text-xs text-slate-600 font-medium">${p.dias} Días</td>
+            <td class="px-3 py-2">
+              ${estaVencido 
+                ? `<span class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full font-bold">Vencido (${p.fechaVencimiento})</span>` 
+                : `<span class="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full font-bold">En Tiempo (Vence ${p.fechaVencimiento})</span>`}
             </td>
+            ${esAdmin ? `
+              <td class="px-3 py-2 text-center">
+                <button onclick="devolverLibro(${idx})" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2.5 py-1 rounded-md">Devolver</button>
+              </td>
+            ` : ''}
           </tr>
         `;
       });
@@ -461,7 +481,7 @@
       const selectUsr = document.getElementById('prestamo-usuario');
       selectUsr.innerHTML = '';
       usuarios.forEach(u => {
-        selectUsr.innerHTML += `<option value="${u.nombre} (${u.id})">${u.nombre} (${u.id}) - Tel: ${u.telefono}</option>`;
+        selectUsr.innerHTML += `<option value="${u.nombre} (${u.id})">${u.nombre} (${u.id})</option>`;
       });
 
       const selectLibro = document.getElementById('prestamo-libro');
@@ -491,19 +511,31 @@
     function procesarPrestamo() {
       const usr = document.getElementById('prestamo-usuario').value;
       const qrLibro = document.getElementById('prestamo-libro').value;
+      const dias = parseInt(document.getElementById('prestamo-dias').value);
 
       const libro = inventario.find(i => i.qr === qrLibro);
       if (libro && libro.disponibles > 0) {
         libro.disponibles--;
         libro.prestados++;
+
+        const ahora = new Date();
+        const fechaHoraFormateada = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const fechaVenc = new Date();
+        fechaVenc.setDate(fechaVenc.getDate() + dias);
+        const fechaVencFormateada = fechaVenc.toISOString().split('T')[0];
+
         prestamos.push({
           usuario: usr,
           libro: libro.titulo,
           qr: libro.qr,
-          fecha: new Date().toISOString().split('T')[0]
+          fechaHora: fechaHoraFormateada,
+          dias: dias,
+          fechaVencimiento: fechaVencFormateada
         });
+
         actualizarVistas();
-        alert('¡Préstamo registrado exitosamente!');
+        alert('¡Préstamo asignado correctamente!');
       }
     }
 
@@ -516,7 +548,7 @@
       }
       prestamos.splice(idx, 1);
       actualizarVistas();
-      alert('¡Devolución completada!');
+      alert('¡Devolución registrada en el sistema!');
     }
 
     function guardarNuevoLibro() {
@@ -531,7 +563,7 @@
       };
       inventario.push(nuevo);
       actualizarVistas();
-      alert('¡Libro agregado correctamente al catálogo!');
+      alert('¡Nuevo libro registrado por el Administrador!');
       switchView('catalogo');
     }
 
