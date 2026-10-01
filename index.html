@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BiblioControl - Acceso al Sistema</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 antialiased min-h-screen bg-slate-100">
+
+  <!-- BARRA SUPERIOR (Se activa al iniciar sesión) -->
+  <header id="main-header" class="bg-indigo-900 text-white shadow-md sticky top-0 z-50 hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('catalogo')">
+        <div class="bg-white text-indigo-900 p-1.5 rounded-lg font-extrabold text-sm">BC</div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">BiblioControl</h1>
+          <p class="text-xs text-indigo-300 hidden sm:block">Instituto Tecnológico</p>
+        </div>
+      </div>
+
+      <!-- Menú Superior -->
+      <nav class="hidden md:flex space-x-4">
+        <button onclick="switchView('catalogo')" class="text-white font-semibold text-sm border-b-2 border-indigo-400 pb-1">Catálogo y Stock</button>
+        <button onclick="switchView('prestamo')" class="text-indigo-200 hover:text-white text-sm font-medium pb-1">Módulo de Préstamos</button>
+        <button onclick="switchView('registro-libro')" class="admin-only text-indigo-200 hover:text-white text-sm font-medium pb-1 hidden">+ Registrar Libro</button>
+      </nav>
+
+      <!-- Estado de Sesión -->
+      <div class="flex items-center space-x-3">
+        <span id="user-badge" class="text-xs bg-indigo-800 text-indigo-200 px-3 py-1 rounded-full border border-indigo-700">Usuario</span>
+        <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg font-medium">Cerrar Sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- VISTA 1: PANTALLA PRINCIPAL DE INICIO DE SESIÓN / REGISTRO -->
+    <section id="view-login" class="max-w-md mx-auto my-auto pt-8">
+      <div class="bg-white rounded-2xl p-8 border border-slate-200 shadow-xl space-y-6">
+        <div class="text-center space-y-2">
+          <div class="bg-indigo-900 text-white w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-xl mx-auto shadow-md">BC</div>
+          <h2 class="text-2xl font-bold text-slate-800">BiblioControl</h2>
+          <p class="text-xs text-slate-500">Sistema de Gestión Bibliotecaria y Préstamos</p>
+        </div>
+
+        <!-- Selector de Pestañas: Login / Registro -->
+        <div class="flex bg-slate-100 p-1 rounded-lg text-xs font-semibold">
+          <button id="btn-tab-login" onclick="setAuthTab('login')" class="flex-1 py-2 rounded-md bg-white text-indigo-900 shadow-sm transition-all">Iniciar Sesión</button>
+          <button id="btn-tab-register" onclick="setAuthTab('register')" class="flex-1 py-2 rounded-md text-slate-500 hover:text-slate-800 transition-all">Crear Cuenta</button>
+        </div>
+
+        <!-- Formulario -->
+        <form onsubmit="event.preventDefault(); procesarAutenticacion();" class="space-y-4">
+          <div>
+            <label class="text-xs font-semibold text-slate-600 block mb-1">Correo Electrónico / Matrícula</label>
+            <input type="email" id="auth-correo" placeholder="usuario@tecnologico.edu.mx" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+
+          <div id="field-usuario" class="hidden">
+            <label class="text-xs font-semibold text-slate-600 block mb-1">Nombre Completo</label>
+            <input type="text" id="auth-usuario" placeholder="Ej. Perla Salinas" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold text-slate-600 block mb-1">Contraseña</label>
+            <input type="password" id="auth-pass" value="123456" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold text-slate-600 block mb-1">Tipo de Usuario / Rol</label>
+            <select id="auth-rol" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="Estudiante">Estudiante / Docente</option>
+              <option value="Admin">Personal de Biblioteca (Administrador)</option>
+            </select>
+          </div>
+
+          <button type="submit" id="auth-submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg text-sm shadow-md transition-all">
+            Ingresar al Sistema
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VISTA 2: CATÁLOGOS, STOCK, CATEGORÍAS Y ESTANTES -->
+    <section id="view-catalogo" class="space-y-6 hidden">
+      
+      <!-- Métricas y Stock -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs text-slate-500 font-medium">Stock Total</p>
+          <p id="stat-total" class="text-2xl font-bold text-slate-800 mt-1">18 Ejemplares</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs text-slate-500 font-medium">Disponibles</p>
+          <p id="stat-disponibles" class="text-2xl font-bold text-emerald-600 mt-1">15 Ejemplares</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs text-slate-500 font-medium">En Préstamo</p>
+          <p id="stat-prestados" class="text-2xl font-bold text-amber-600 mt-1">3 Ejemplares</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs text-slate-500 font-medium">Categorías</p>
+          <p class="text-2xl font-bold text-indigo-600 mt-1">3 Áreas</p>
+        </div>
+      </div>
+
+      <!-- Buscador y Filtros -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
+        <div class="relative w-full md:w-80">
+          <input type="text" id="search-input" onkeyup="filtrarCatalogo()" placeholder="Buscar título, autor o código..." class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+        </div>
+        
+        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+          <select id="filter-categoria" onchange="filtrarCatalogo()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700">
+            <option value="">Todas las Categorías</option>
+            <option value="Sistemas Computacionales">Sistemas Computacionales</option>
+            <option value="Ingeniería Industrial">Ingeniería Industrial</option>
+            <option value="Hardware / Cómputo">Hardware / Cómputo</option>
+          </select>
+
+          <select id="filter-estante" onchange="filtrarCatalogo()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700">
+            <option value="">Todos los Estantes</option>
+            <option value="Estante A-1">Estante A-1</option>
+            <option value="Estante B-3">Estante B-3</option>
+            <option value="Lab Cómputo 2">Lab Cómputo 2</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabla del Catálogo -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-xs text-slate-500 uppercase">
+              <tr>
+                <th class="px-4 py-3">Código/ID</th>
+                <th class="px-4 py-3">Título / Recurso</th>
+                <th class="px-4 py-3">Categoría</th>
+                <th class="px-4 py-3">Estante / Ubicación</th>
+                <th class="px-4 py-3 text-center">Stock</th>
+                <th class="px-4 py-3">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="catalogo-body" class="divide-y divide-slate-100">
+              <!-- Cargado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA 3: MÓDULO DE PRÉSTAMOS -->
+    <section id="view-prestamo" class="max-w-3xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6 hidden">
+      <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+        <i data-lucide="book-open-check" class="text-indigo-600"></i> Registrar Préstamo o Devolución
+      </h2>
+
+      <div class="flex gap-4 border-b pb-4">
+        <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+          <input type="radio" name="method" value="manual" checked onchange="toggleMethod('manual')" class="text-indigo-600">
+          Ingreso Manual (Código / Correo / ID)
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+          <input type="radio" name="method" value="qr" onchange="toggleMethod('qr')" class="text-indigo-600">
+          Escáner QR (Opcional)
+        </label>
+      </div>
+
+      <form id="form-manual" onsubmit="event.preventDefault(); procesarPrestamoManual();" class="space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-slate-600 block mb-1">Correo o Matrícula del Usuario</label>
+          <input type="text" id="manual-user" placeholder="ejemplo@estudiante.edu.mx" required class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 block mb-1">Código o Título del Libro/Equipo</label>
+          <input type="text" id="manual-book" placeholder="ejemplo: BOOK-101" required class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg text-sm">Procesar Préstamo Directo</button>
+      </form>
+
+      <div id="section-qr" class="space-y-4 hidden">
+        <div class="relative bg-slate-900 rounded-lg overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
+          <div id="reader" class="w-full h-full"></div>
+          <div id="placeholder-ui" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+            <i data-lucide="camera" class="h-10 w-10 text-slate-500 mb-2 animate-pulse"></i>
+            <p class="text-sm font-medium text-slate-300">Cámara Inactiva</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-start" onclick="startScanner()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium">Activar Cámara</button>
+          <button id="btn-stop" onclick="stopScanner()" disabled class="bg-slate-200 text-slate-600 py-2 px-4 rounded-lg text-sm">Detener</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA 4: REGISTRO DE LIBROS (SOLO ADMIN) -->
+    <section id="view-registro-libro" class="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
+      <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+        <i data-lucide="plus-circle" class="text-indigo-600"></i> Agregar Libro o Equipo al Inventario
+      </h2>
+      <form onsubmit="event.preventDefault(); guardarNuevoLibro();" class="space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-slate-600 block mb-1">Título del Libro o Equipo</label>
+          <input type="text" id="reg-titulo" required class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-semibold text-slate-600 block mb-1">Categoría</label>
+            <select id="reg-categoria" required class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+              <option value="Sistemas Computacionales">Sistemas Computacionales</option>
+              <option value="Ingeniería Industrial">Ingeniería Industrial</option>
+              <option value="Hardware / Cómputo">Hardware / Cómputo</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 block mb-1">Estante / Ubicación Física</label>
+            <input type="text" id="reg-estante" placeholder="Ej. Estante A-2" required class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-semibold text-slate-600 block mb-1">Código de Acceso / ID</label>
+            <input type="text" id="reg-qr" placeholder="BOOK-999" required class="w-full border border-slate-300 rounded-lg p-2 text-sm font-mono">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 block mb-1">Stock Inicial</label>
+            <input type="number" id="reg-stock" min="1" value="1" required class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg text-sm">Guardar en Inventario</button>
+      </form>
+    </section>
+
+  </main>
+
+  <script>
+    let inventario = [
+      { qr: "BOOK-101", titulo: "Ingeniería de Software - Pressman", categoria: "Sistemas Computacionales", estante: "Estante A-1", total: 5, disponibles: 4, prestados: 1 },
+      { qr: "BOOK-202", titulo: "Sistemas Operativos - Tanenbaum", categoria: "Sistemas Computacionales", estante: "Estante A-1", total: 3, disponibles: 3, prestados: 0 },
+      { qr: "IND-301", titulo: "Investigación de Operaciones - Taha", categoria: "Ingeniería Industrial", estante: "Estante B-3", total: 4, disponibles: 3, prestados: 1 },
+      { qr: "LAP-001", titulo: "Laptop Dell Latitude 3420", categoria: "Hardware / Cómputo", estante: "Lab Cómputo 2", total: 6, disponibles: 5, prestados: 1 }
+    ];
+
+    let authMode = 'login';
+    let html5QrCode = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+    });
+
+    function setAuthTab(tab) {
+      authMode = tab;
+      const btnLogin = document.getElementById('btn-tab-login');
+      const btnRegister = document.getElementById('btn-tab-register');
+      const fieldUser = document.getElementById('field-usuario');
+      const submitBtn = document.getElementById('auth-submit-btn');
+
+      if (tab === 'register') {
+        btnLogin.className = "flex-1 py-2 rounded-md text-slate-500 hover:text-slate-800 transition-all";
+        btnRegister.className = "flex-1 py-2 rounded-md bg-white text-indigo-900 shadow-sm transition-all";
+        fieldUser.classList.remove('hidden');
+        submitBtn.innerText = "Registrar Cuenta";
+      } else {
+        btnRegister.className = "flex-1 py-2 rounded-md text-slate-500 hover:text-slate-800 transition-all";
+        btnLogin.className = "flex-1 py-2 rounded-md bg-white text-indigo-900 shadow-sm transition-all";
+        fieldUser.classList.add('hidden');
+        submitBtn.innerText = "Ingresar al Sistema";
+      }
+    }
+
+    function procesarAutenticacion() {
+      const correo = document.getElementById('auth-correo').value;
+      const rol = document.getElementById('auth-rol').value;
+
+      document.getElementById('main-header').classList.remove('hidden');
+      document.getElementById('user-badge').innerText = `${correo} (${rol})`;
+
+      if (rol === 'Admin') {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+      } else {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+      }
+
+      switchView('catalogo');
+      renderCatalogo(inventario);
+    }
+
+    function cerrarSesion() {
+      document.getElementById('main-header').classList.add('hidden');
+      switchView('login');
+      document.getElementById('auth-correo').value = '';
+    }
+
+    function switchView(viewName) {
+      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+      document.getElementById('view-' + viewName).classList.remove('hidden');
+    }
+
+    function renderCatalogo(data) {
+      const tbody = document.getElementById('catalogo-body');
+      tbody.innerHTML = '';
+      let tot = 0, disp = 0, prest = 0;
+
+      data.forEach(item => {
+        tot += item.total;
+        disp += item.disponibles;
+        prest += item.prestados;
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono text-xs text-indigo-600 font-bold">#${item.qr}</td>
+            <td class="px-4 py-3 font-medium text-slate-800">${item.titulo}</td>
+            <td class="px-4 py-3 text-xs text-slate-500">${item.categoria}</td>
+            <td class="px-4 py-3 text-xs text-slate-600 font-medium">${item.estante}</td>
+            <td class="px-4 py-3 text-center text-xs font-bold">${item.disponibles} / ${item.total}</td>
+            <td class="px-4 py-3">
+              ${item.disponibles > 0 
+                ? `<span class="px-2.5 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded-full font-medium">Disponible</span>` 
+                : `<span class="px-2.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full font-medium">Agotado</span>`}
+            </td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('stat-total').innerText = `${tot} Ejemplares`;
+      document.getElementById('stat-disponibles').innerText = `${disp} Ejemplares`;
+      document.getElementById('stat-prestados').innerText = `${prest} Ejemplares`;
+    }
+
+    function filtrarCatalogo() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const cat = document.getElementById('filter-categoria').value;
+      const est = document.getElementById('filter-estante').value;
+
+      const filtrados = inventario.filter(item => {
+        const matchQ = item.titulo.toLowerCase().includes(q) || item.qr.toLowerCase().includes(q);
+        const matchCat = cat === '' || item.categoria === cat;
+        const matchEst = est === '' || item.estante === est;
+        return matchQ && matchCat && matchEst;
+      });
+
+      renderCatalogo(filtrados);
+    }
+
+    function toggleMethod(type) {
+      if (type === 'manual') {
+        document.getElementById('form-manual').classList.remove('hidden');
+        document.getElementById('section-qr').classList.add('hidden');
+        stopScanner();
+      } else {
+        document.getElementById('form-manual').classList.add('hidden');
+        document.getElementById('section-qr').classList.remove('hidden');
+      }
+    }
+
+    function procesarPrestamoManual() {
+      alert("¡Préstamo registrado exitosamente!");
+      document.getElementById('manual-user').value = '';
+      document.getElementById('manual-book').value = '';
+    }
+
+    function guardarNuevoLibro() {
+      const nuevo = {
+        qr: document.getElementById('reg-qr').value,
+        titulo: document.getElementById('reg-titulo').value,
+        categoria: document.getElementById('reg-categoria').value,
+        estante: document.getElementById('reg-estante').value,
+        total: parseInt(document.getElementById('reg-stock').value),
+        disponibles: parseInt(document.getElementById('reg-stock').value),
+        prestados: 0
+      };
+      inventario.push(nuevo);
+      renderCatalogo(inventario);
+      alert('¡Libro o Equipo agregado correctamente!');
+      switchView('catalogo');
+    }
+
+    function startScanner() {
+      document.getElementById('placeholder-ui').classList.add('hidden');
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, (text) => alert("Lectura QR: " + text))
+        .then(() => {
+          document.getElementById('btn-start').disabled = true;
+          document.getElementById('btn-stop').disabled = false;
+        }).catch(err => alert("Error en cámara: " + err));
+    }
+
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          document.getElementById('placeholder-ui').classList.remove('hidden');
+          document.getElementById('btn-start').disabled = false;
+          document.getElementById('btn-stop').disabled = true;
+        });
+      }
+    }
+  </script>
+</body>
+</html>
