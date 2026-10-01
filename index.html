@@ -26,6 +26,7 @@
         <button onclick="switchView('catalogo')" class="text-white font-semibold text-sm border-b-2 border-indigo-400 pb-1">Catálogo General</button>
         <button onclick="switchView('usuarios')" class="text-indigo-200 hover:text-white text-sm font-medium pb-1">Registro de Usuarios</button>
         <button onclick="switchView('prestamo')" class="text-indigo-200 hover:text-white text-sm font-medium pb-1">Estatus de Préstamos</button>
+        <button onclick="switchView('reportes')" class="text-indigo-200 hover:text-white text-sm font-medium pb-1">📊 Reportes & Gráficas</button>
         <button onclick="switchView('registro-libro')" class="admin-only text-indigo-200 hover:text-white text-sm font-medium pb-1 hidden">+ Registrar Libro (Admin)</button>
       </nav>
 
@@ -155,10 +156,9 @@
       </div>
     </section>
 
-    <!-- VISTA 3: REGISTRO GENERAL DE USUARIOS (Estudiantes y Público) -->
+    <!-- VISTA 3: REGISTRO GENERAL DE USUARIOS -->
     <section id="view-usuarios" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
             <i data-lucide="user-plus" class="text-indigo-600"></i> Registrar Usuario
@@ -211,15 +211,12 @@
             </table>
           </div>
         </div>
-
       </div>
     </section>
 
     <!-- VISTA 4: MÓDULO DE PRÉSTAMOS, DETALLE Y VENCIMIENTO -->
     <section id="view-prestamo" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        <!-- Asignar Préstamo (Visible sólo para Admin) -->
         <div class="admin-only bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
             <i data-lucide="book-open-check" class="text-indigo-600"></i> Asignar Nuevo Préstamo
@@ -245,7 +242,6 @@
           </form>
         </div>
 
-        <!-- Tabla Completa de Referencia de Préstamos (Pública / Admin) -->
         <div id="container-prestamos" class="md:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
             <i data-lucide="clock" class="text-indigo-600"></i> Estatus y Detalle de Libros Prestados
@@ -266,11 +262,57 @@
             </table>
           </div>
         </div>
-
       </div>
     </section>
 
-    <!-- VISTA 5: REGISTRO DE LIBROS POR EL ADMINISTRADOR -->
+    <!-- VISTA 5: REPORTES Y GRÁFICAS ESPERADAS (ACTIVIDAD 5) -->
+    <section id="view-reportes" class="space-y-6 hidden">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+          <i data-lucide="bar-chart-3" class="text-indigo-600"></i> Reportes y Gráficas Esperadas del Simulador
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <!-- Gráfica 1: Disponibilidad de Inventario -->
+          <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
+            <h3 class="text-sm font-bold text-slate-700">1. Estado del Stock (Disponibles vs. En Préstamo)</h3>
+            <div class="space-y-2">
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span class="text-emerald-700">Libros Disponibles</span>
+                  <span id="chart-disp-percent">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden">
+                  <div id="bar-disp" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span class="text-amber-700">Libros en Préstamo</span>
+                  <span id="chart-prest-percent">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden">
+                  <div id="bar-prest" class="bg-amber-500 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500 pt-2 border-t border-slate-200">Indica el porcentaje en tiempo real del material disponible para préstamos inmediatos.</p>
+          </div>
+
+          <!-- Gráfica 2: Distribución por Géneros Literarios -->
+          <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
+            <h3 class="text-sm font-bold text-slate-700">2. Distribución de Libros por Género / Categoría</h3>
+            <div id="chart-generos-container" class="space-y-2">
+              <!-- Cargado dinámicamente -->
+            </div>
+            <p class="text-xs text-slate-500 pt-2 border-t border-slate-200">Proporción de acervo bibliográfico clasificado por áreas del conocimiento.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA 6: REGISTRO DE LIBROS POR EL ADMINISTRADOR -->
     <section id="view-registro-libro" class="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
       <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
         <i data-lucide="plus-circle" class="text-indigo-600"></i> Registrar Nuevo Libro / Recurso (Admin)
@@ -394,6 +436,7 @@
       renderCatalogo(inventario);
       renderUsuarios();
       renderPrestamos();
+      renderGraficas();
       actualizarSelectores();
     }
 
@@ -450,7 +493,6 @@
     function renderPrestamos() {
       const tbody = document.getElementById('prestamos-body');
       tbody.innerHTML = '';
-
       const hoy = new Date().toISOString().split('T')[0];
 
       prestamos.forEach((p, idx) => {
@@ -473,6 +515,48 @@
               </td>
             ` : ''}
           </tr>
+        `;
+      });
+    }
+
+    function renderGraficas() {
+      let tot = 0, disp = 0, prest = 0;
+      const conteoGeneros = {};
+
+      inventario.forEach(i => {
+        tot += i.total;
+        disp += i.disponibles;
+        prest += i.prestados;
+
+        conteoGeneros[i.categoria] = (conteoGeneros[i.categoria] || 0) + i.total;
+      });
+
+      const pctDisp = tot > 0 ? Math.round((disp / tot) * 100) : 0;
+      const pctPrest = tot > 0 ? Math.round((prest / tot) * 100) : 0;
+
+      document.getElementById('chart-disp-percent').innerText = `${pctDisp}% (${disp} libros)`;
+      document.getElementById('bar-disp').style.width = `${pctDisp}%`;
+
+      document.getElementById('chart-prest-percent').innerText = `${pctPrest}% (${prest} libros)`;
+      document.getElementById('bar-prest').style.width = `${pctPrest}%`;
+
+      const containerGeneros = document.getElementById('chart-generos-container');
+      containerGeneros.innerHTML = '';
+
+      Object.keys(conteoGeneros).forEach(cat => {
+        const cant = conteoGeneros[cat];
+        const pctCat = tot > 0 ? Math.round((cant / tot) * 100) : 0;
+
+        containerGeneros.innerHTML += `
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span class="text-slate-700">${cat}</span>
+              <span class="text-indigo-700">${pctCat}% (${cant})</span>
+            </div>
+            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+              <div class="bg-indigo-600 h-full transition-all duration-500" style="width: ${pctCat}%"></div>
+            </div>
+          </div>
         `;
       });
     }
