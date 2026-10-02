@@ -265,14 +265,29 @@
       </div>
     </section>
 
-    <!-- VISTA 5: REPORTES Y GRÁFICAS ESPERADAS (ACTIVIDAD 5) -->
+    <!-- VISTA 5: REPORTES, GRÁFICAS Y EXPORTACIÓN EN PDF / EXCEL -->
     <section id="view-reportes" class="space-y-6 hidden">
-      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-          <i data-lucide="bar-chart-3" class="text-indigo-600"></i> Reportes y Gráficas Esperadas del Simulador
-        </h2>
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="text-indigo-600"></i> Reportes y Gráficas del Sistema
+            </h2>
+            <p class="text-xs text-slate-500">Métricas en tiempo real y descarga de informes</p>
+          </div>
+
+          <!-- BOTONES DE DESCARGA PDF / EXCEL -->
+          <div class="flex gap-2">
+            <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="file-text" class="w-4 h-4"></i> Descargar PDF
+            </button>
+            <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="sheet" class="w-4 h-4"></i> Descargar Excel (CSV)
+            </button>
+          </div>
+        </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Gráfica 1: Disponibilidad de Inventario -->
           <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
             <h3 class="text-sm font-bold text-slate-700">1. Estado del Stock (Disponibles vs. En Préstamo)</h3>
@@ -573,6 +588,29 @@
       inventario.filter(i => i.disponibles > 0).forEach(i => {
         selectLibro.innerHTML += `<option value="${i.qr}">${i.titulo} [Disp: ${i.disponibles}]</option>`;
       });
+    }
+
+    // EXPORTACIÓN A PDF (ABRE DIÁLOGO DE IMPRESIÓN/GUARDADO DE NAVEGADOR)
+    function exportarPDF() {
+      window.print();
+    }
+
+    // EXPORTACIÓN A EXCEL / CSV
+    function exportarExcel() {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "ID/Codigo,Titulo,Categoria,Estante,Disponibles,Total\n";
+
+      inventario.forEach(i => {
+        csvContent += `"${i.qr}","${i.titulo}","${i.categoria}","${i.estante}",${i.disponibles},${i.total}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "Reporte_Inventario_BiblioControl.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     function guardarUsuario() {
