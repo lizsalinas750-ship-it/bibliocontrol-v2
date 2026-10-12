@@ -214,14 +214,24 @@
       </div>
     </section>
 
-    <!-- VISTA 4: MÓDULO DE PRÉSTAMOS, DETALLE Y VENCIMIENTO -->
+    <!-- VISTA 4: MÓDULO DE PRÉSTAMOS, DETALLE, ESCÁNER QR Y VENCIMIENTO -->
     <section id="view-prestamo" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- ASIGNACIÓN DE PRÉSTAMO CON SELECCIÓN O ESCÁNER QR (SOLO ADMIN) -->
         <div class="admin-only bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
             <i data-lucide="book-open-check" class="text-indigo-600"></i> Asignar Nuevo Préstamo
           </h2>
-          <form onsubmit="event.preventDefault(); procesarPrestamo();" class="space-y-3">
+
+          <!-- Pestañas: Manual o Escáner QR -->
+          <div class="flex bg-slate-100 p-1 rounded-lg text-xs font-semibold">
+            <button id="btn-mode-manual" onclick="setPrestamoMode('manual')" class="flex-1 py-1.5 rounded-md bg-white text-indigo-900 shadow-sm">Selección Manual</button>
+            <button id="btn-mode-qr" onclick="setPrestamoMode('qr')" class="flex-1 py-1.5 rounded-md text-slate-500 hover:text-slate-800">📷 Escáner QR</button>
+          </div>
+
+          <!-- MODO 1: SELECCIÓN MANUAL -->
+          <form id="form-prestamo-manual" onsubmit="event.preventDefault(); procesarPrestamo();" class="space-y-3">
             <div>
               <label class="text-xs font-semibold text-slate-600 block mb-1">Seleccionar Usuario</label>
               <select id="prestamo-usuario" required class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white"></select>
@@ -240,6 +250,21 @@
             </div>
             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-sm">Registrar Salida de Libro</button>
           </form>
+
+          <!-- MODO 2: ESCÁNER QR -->
+          <div id="section-qr-scanner" class="space-y-3 hidden">
+            <div class="relative bg-slate-900 rounded-lg overflow-hidden flex flex-col items-center justify-center min-h-[200px]">
+              <div id="reader" class="w-full h-full"></div>
+              <div id="placeholder-ui" class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                <i data-lucide="camera" class="h-8 w-8 text-slate-400 mb-1 animate-pulse"></i>
+                <p class="text-xs font-medium text-slate-300">Cámara Inactiva</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-start" onclick="startScanner()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-xs font-medium">Activar Cámara</button>
+              <button id="btn-stop" onclick="stopScanner()" disabled class="bg-slate-200 text-slate-600 py-2 px-3 rounded-lg text-xs">Detener</button>
+            </div>
+          </div>
         </div>
 
         <div id="container-prestamos" class="md:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
@@ -276,7 +301,6 @@
             <p class="text-xs text-slate-500">Métricas en tiempo real y descarga de informes</p>
           </div>
 
-          <!-- BOTONES DE DESCARGA PDF / EXCEL -->
           <div class="flex gap-2">
             <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm">
               <i data-lucide="file-text" class="w-4 h-4"></i> Descargar PDF
@@ -288,7 +312,6 @@
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Gráfica 1: Disponibilidad de Inventario -->
           <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
             <h3 class="text-sm font-bold text-slate-700">1. Estado del Stock (Disponibles vs. En Préstamo)</h3>
             <div class="space-y-2">
@@ -315,12 +338,9 @@
             <p class="text-xs text-slate-500 pt-2 border-t border-slate-200">Indica el porcentaje en tiempo real del material disponible para préstamos inmediatos.</p>
           </div>
 
-          <!-- Gráfica 2: Distribución por Géneros Literarios -->
           <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
             <h3 class="text-sm font-bold text-slate-700">2. Distribución de Libros por Género / Categoría</h3>
-            <div id="chart-generos-container" class="space-y-2">
-              <!-- Cargado dinámicamente -->
-            </div>
+            <div id="chart-generos-container" class="space-y-2"></div>
             <p class="text-xs text-slate-500 pt-2 border-t border-slate-200">Proporción de acervo bibliográfico clasificado por áreas del conocimiento.</p>
           </div>
         </div>
@@ -392,6 +412,7 @@
     ];
 
     let esAdmin = false;
+    let html5QrCode = null;
 
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
@@ -438,13 +459,57 @@
     }
 
     function cerrarSesion() {
+      stopScanner();
       document.getElementById('main-header').classList.add('hidden');
       switchView('login');
     }
 
     function switchView(viewName) {
+      if (viewName !== 'prestamo') stopScanner();
       document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
       document.getElementById('view-' + viewName).classList.remove('hidden');
+    }
+
+    function setPrestamoMode(mode) {
+      const btnManual = document.getElementById('btn-mode-manual');
+      const btnQr = document.getElementById('btn-mode-qr');
+      const formManual = document.getElementById('form-prestamo-manual');
+      const sectionQr = document.getElementById('section-qr-scanner');
+
+      if (mode === 'qr') {
+        btnManual.className = "flex-1 py-1.5 rounded-md text-slate-500 hover:text-slate-800";
+        btnQr.className = "flex-1 py-1.5 rounded-md bg-white text-indigo-900 shadow-sm";
+        formManual.classList.add('hidden');
+        sectionQr.classList.remove('hidden');
+      } else {
+        btnQr.className = "flex-1 py-1.5 rounded-md text-slate-500 hover:text-slate-800";
+        btnManual.className = "flex-1 py-1.5 rounded-md bg-white text-indigo-900 shadow-sm";
+        formManual.classList.remove('hidden');
+        sectionQr.classList.add('hidden');
+        stopScanner();
+      }
+    }
+
+    function startScanner() {
+      document.getElementById('placeholder-ui').classList.add('hidden');
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, (text) => {
+        alert("Lectura de Código QR exitosa: " + text);
+      }).then(() => {
+        document.getElementById('btn-start').disabled = true;
+        document.getElementById('btn-stop').disabled = false;
+      }).catch(err => alert("Error al activar la cámara: " + err));
+    }
+
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          document.getElementById('placeholder-ui').classList.remove('hidden');
+          document.getElementById('btn-start').disabled = false;
+          document.getElementById('btn-stop').disabled = true;
+        }).catch(() => {});
+      }
     }
 
     function actualizarVistas() {
@@ -590,12 +655,10 @@
       });
     }
 
-    // EXPORTACIÓN A PDF (ABRE DIÁLOGO DE IMPRESIÓN/GUARDADO DE NAVEGADOR)
     function exportarPDF() {
       window.print();
     }
 
-    // EXPORTACIÓN A EXCEL / CSV
     function exportarExcel() {
       let csvContent = "data:text/csv;charset=utf-8,";
       csvContent += "ID/Codigo,Titulo,Categoria,Estante,Disponibles,Total\n";
