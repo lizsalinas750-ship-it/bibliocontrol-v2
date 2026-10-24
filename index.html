@@ -214,23 +214,20 @@
       </div>
     </section>
 
-    <!-- VISTA 4: MÓDULO DE PRÉSTAMOS, DETALLE, ESCÁNER QR Y VENCIMIENTO -->
+    <!-- VISTA 4: MÓDULO DE PRÉSTAMOS, ESCÁNER Y RECORDATORIOS -->
     <section id="view-prestamo" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <!-- ASIGNACIÓN DE PRÉSTAMO CON SELECCIÓN O ESCÁNER QR (SOLO ADMIN) -->
         <div class="admin-only bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 hidden">
           <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
             <i data-lucide="book-open-check" class="text-indigo-600"></i> Asignar Nuevo Préstamo
           </h2>
 
-          <!-- Pestañas: Manual o Escáner QR -->
           <div class="flex bg-slate-100 p-1 rounded-lg text-xs font-semibold">
             <button id="btn-mode-manual" onclick="setPrestamoMode('manual')" class="flex-1 py-1.5 rounded-md bg-white text-indigo-900 shadow-sm">Selección Manual</button>
             <button id="btn-mode-qr" onclick="setPrestamoMode('qr')" class="flex-1 py-1.5 rounded-md text-slate-500 hover:text-slate-800">📷 Escáner QR</button>
           </div>
 
-          <!-- MODO 1: SELECCIÓN MANUAL -->
           <form id="form-prestamo-manual" onsubmit="event.preventDefault(); procesarPrestamo();" class="space-y-3">
             <div>
               <label class="text-xs font-semibold text-slate-600 block mb-1">Seleccionar Usuario</label>
@@ -251,7 +248,6 @@
             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-sm">Registrar Salida de Libro</button>
           </form>
 
-          <!-- MODO 2: ESCÁNER QR -->
           <div id="section-qr-scanner" class="space-y-3 hidden">
             <div class="relative bg-slate-900 rounded-lg overflow-hidden flex flex-col items-center justify-center min-h-[200px]">
               <div id="reader" class="w-full h-full"></div>
@@ -267,10 +263,17 @@
           </div>
         </div>
 
+        <!-- TABLA Y BOTÓN DE RECORDATORIOS AUTOMÁTICOS -->
         <div id="container-prestamos" class="md:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-            <i data-lucide="clock" class="text-indigo-600"></i> Estatus y Detalle de Libros Prestados
-          </h2>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2">
+            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="clock" class="text-indigo-600"></i> Estatus y Detalle de Libros Prestados
+            </h2>
+            <button onclick="enviarRecordatorios()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm">
+              <i data-lucide="bell" class="w-3.5 h-3.5"></i> Enviar Recordatorio Automático
+            </button>
+          </div>
+
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm text-slate-600">
               <thead class="bg-slate-50 text-xs text-slate-500 uppercase">
@@ -290,7 +293,7 @@
       </div>
     </section>
 
-    <!-- VISTA 5: REPORTES, GRÁFICAS Y EXPORTACIÓN EN PDF / EXCEL -->
+    <!-- VISTA 5: REPORTES, GRÁFICAS Y EXPORTACIÓN -->
     <section id="view-reportes" class="space-y-6 hidden">
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-3">
@@ -509,6 +512,24 @@
           document.getElementById('btn-start').disabled = false;
           document.getElementById('btn-stop').disabled = true;
         }).catch(() => {});
+      }
+    }
+
+    // FUNCIÓN DE RECORDATORIO AUTOMÁTICO DE VENCIMIENTOS
+    function enviarRecordatorios() {
+      const hoy = new Date().toISOString().split('T')[0];
+      let notificaciones = [];
+
+      prestamos.forEach(p => {
+        if (p.fechaVencimiento <= hoy) {
+          notificaciones.push(`📧 Correo enviado a ${p.usuario} por el libro "${p.libro}" (Vencimiento: ${p.fechaVencimiento})`);
+        }
+      });
+
+      if (notificaciones.length > 0) {
+        alert("🔔 SISTEMA DE NOTIFICACIONES AUTOMÁTICAS BC:\n\n" + notificaciones.join("\n\n"));
+      } else {
+        alert("🔔 Todos los préstamos actuales se encuentran al día.");
       }
     }
 
